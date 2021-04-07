@@ -1,2 +1,2 @@
 # clv-modeling
-Some CLV models
+Udemy course covering python lifetimes package
