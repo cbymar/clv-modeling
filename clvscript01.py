@@ -1,5 +1,6 @@
-
-
+import matplotlib.pyplot as plt
+import math
+import numpy as np
 """
 #### Notes on Modeling
 BG/NBD models probability of death after each purchase. X ~ binomial; p ~ beta
@@ -53,4 +54,69 @@ cfit1 = cf.fit(rossi_dataset, duration_col="week", event_col="arrest",
                strata=["wexp"])
 cfit1.print_summary()
 
-# cf.fit(formula=)
+cfit2 = cf.fit(rossi_dataset, duration_col="week", event_col="arrest",formula="fin+age",strata=["wexp"])
+cfit2.print_summary()
+
+####################################################################
+#### Bayesian survival analysis
+# Following http://docs.pymc.io/notebooks/survival_analysis.html
+# clvscript02_baysian.py
+
+##### Review, from lifelines docs:
+# Following https://lifelines.readthedocs.io/en/latest/Survival%20Analysis%20intro.html
+# Cumulative hazard is integral of hazard and also the negative log of survival function.
+# Per sklearn, estimated vals have appended underscore
+from lifelines.statistics import logrank_test
+from lifelines.datasets import load_dd
+data = load_dd()
+T, E = data["duration"], data["observed"]
+dem = data["democracy"] == "Democracy"
+from lifelines import KaplanMeierFitter,
+kmf = KaplanMeierFitter()  # instantiate and fit to some survival data
+kmf.fit(T, event_observed=E)
+# plot easily the outputs.  For instance, we can do the logrank test
+logrank_test(T[dem], T[~dem], E[dem], E[~dem], alpha=.99)
+#### Weibull (parametric model) is great because it includes a time-varying param.
+from lifelines import WeibullFitter
+from lifelines.datasets import load_waltons
+data = load_waltons()
+
+T = data['T']
+E = data['E']
+sum(E)/len(E)
+sum(E)
+wbfitted = WeibullFitter().fit(T, E)
+wbfitted.print_summary()
+wbfitted.lambda_ ** -1
+wbfitted.rho_
+# lambda being the event rate
+np.exp(  - (10/wbfitted.lambda_) ** wbfitted.rho_   )
+
+
+x = [np.exp(- (i / wbfitted.lambda_) ** wbfitted.rho_) for i in range(1,76,1)]
+
+ax = wbfitted.plot_survival_function()
+#### Use qqplots to evaluate fit
+from lifelines import *
+from lifelines.plotting import qq_plot
+
+N=1000
+T_actual = np.exp(np.random.randn(N))  # standard normal
+C = np.exp(np.random.randn(N))
+E = T_actual < C  # sum(E)
+T = np.minimum(T_actual, C)
+
+fig, axes = plt.subplots(2,2, figsize=(8,6))
+axes = axes.reshape(4,)
+for i, model in enumerate([WeibullFitter(), LogNormalFitter(),
+                           LogLogisticFitter(),ExponentialFitter()]):
+    model.fit(T, E)
+    qq_plot(model, ax=axes[i])
+#### Notes from doc:
+# Can directly (through a command) find best model by AIC.
+# There are standard SQL queries for doing the 'stsetting'.
+# Flag clusters to ensure that SEs are reasonable
+# Standard pickle.dump() methods.
+# sklearn type crossvalidation and grid search
+
+
